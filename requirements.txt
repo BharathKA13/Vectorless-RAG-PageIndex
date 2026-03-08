@@ -1,0 +1,17 @@
+# ── Core ──
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+python-multipart
+python-dotenv
+aiofiles
+
+# ── PageIndex + OpenAI ──
+pageindex
+openai
+
+# ── Testing ──
+httpx
+pytest
+pytest-asyncio

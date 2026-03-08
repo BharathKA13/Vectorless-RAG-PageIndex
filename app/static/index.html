@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document Intelligence – PageIndex</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+    <!-- ── Sidebar ─────────────────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                <span>DocIntel-Vectorless RAG</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-btn active" data-view="upload">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <span>Upload</span>
+            </button>
+            <button class="nav-btn" data-view="documents">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                    <polyline points="13 2 13 9 20 9"></polyline>
+                </svg>
+                <span>Documents</span>
+            </button>
+            <button class="nav-btn" data-view="query">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <span>Query</span>
+            </button>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="status-indicator" id="apiStatus">
+                <span class="status-dot"></span>
+                <span class="status-text">Checking API…</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ── Main Content ────────────────────────────────────────── -->
+    <main class="main-content">
+        <header class="top-bar">
+            <button class="menu-toggle" id="menuToggle">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <h1 class="page-title" id="pageTitle">Upload Document</h1>
+        </header>
+
+        <!-- ── Upload View ──────────────────────────────────── -->
+        <section class="view active" id="view-upload">
+            <div class="card upload-card">
+                <div class="drop-zone" id="dropZone">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p class="drop-text">Drag &amp; drop a PDF here, or <label for="fileInput" class="browse-link">browse</label></p>
+                    <p class="drop-hint">Only PDF files are accepted</p>
+                    <input type="file" id="fileInput" accept=".pdf" hidden />
+                </div>
+                <div class="upload-progress hidden" id="uploadProgress">
+                    <div class="file-info">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><polyline points="13 2 13 9 20 9"></polyline></svg>
+                        <span id="uploadFileName"></span>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                    <p class="upload-status" id="uploadStatus">Uploading…</p>
+                </div>
+                <div class="upload-result hidden" id="uploadResult">
+                    <div class="result-icon success">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <h3>Document Submitted</h3>
+                    <p>Doc ID: <code id="resultDocId"></code></p>
+                    <div class="result-actions">
+                        <button class="btn btn-secondary" id="btnUploadAnother">Upload Another</button>
+                        <button class="btn btn-primary" id="btnGoQuery">Query This Document</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Documents View ───────────────────────────────── -->
+        <section class="view" id="view-documents">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Submitted Documents</h2>
+                    <button class="btn btn-sm btn-secondary" id="btnRefreshDocs">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                        Refresh
+                    </button>
+                </div>
+                <div class="table-wrapper">
+                    <table class="doc-table">
+                        <thead>
+                            <tr><th>Doc ID</th><th>Filename</th><th>Status</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody id="docTableBody">
+                            <tr><td colspan="4" class="empty-state">No documents yet. Upload one to get started.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── Query View ───────────────────────────────────── -->
+        <section class="view" id="view-query">
+            <div class="query-container">
+                <div class="card query-input-card">
+                    <h2>Ask a Question</h2>
+                    <div class="form-group">
+                        <label for="queryDocId">Document ID</label>
+                        <input type="text" id="queryDocId" placeholder="Enter doc_id from upload step" />
+                    </div>
+                    <div class="form-group">
+                        <label for="queryText">Your Question</label>
+                        <textarea id="queryText" rows="3" placeholder="e.g. What is the main finding of this paper?"></textarea>
+                    </div>
+                    <button class="btn btn-primary btn-block" id="btnQuery">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                        Search &amp; Answer
+                    </button>
+                </div>
+
+                <div class="query-results hidden" id="queryResults">
+                    <!-- Thinking -->
+                    <div class="card result-card">
+                        <div class="result-card-header" data-toggle="thinkingBody">
+                            <h3>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                                Reasoning
+                            </h3>
+                            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
+                        <div class="result-card-body" id="thinkingBody">
+                            <p id="thinkingText"></p>
+                        </div>
+                    </div>
+
+                    <!-- Retrieved Nodes -->
+                    <div class="card result-card">
+                        <div class="result-card-header" data-toggle="nodesBody">
+                            <h3>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                                Retrieved Nodes
+                            </h3>
+                            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
+                        <div class="result-card-body" id="nodesBody">
+                            <div id="nodesList"></div>
+                        </div>
+                    </div>
+
+                    <!-- Context Preview -->
+                    <div class="card result-card">
+                        <div class="result-card-header" data-toggle="contextBody">
+                            <h3>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                                Context Preview
+                            </h3>
+                            <svg class="chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                        </div>
+                        <div class="result-card-body collapsed" id="contextBody">
+                            <pre id="contextText"></pre>
+                        </div>
+                    </div>
+
+                    <!-- Answer -->
+                    <div class="card result-card answer-card">
+                        <div class="result-card-header">
+                            <h3>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                Answer
+                            </h3>
+                        </div>
+                        <div class="result-card-body">
+                            <div id="answerText"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading overlay for query -->
+                <div class="query-loading hidden" id="queryLoading">
+                    <div class="spinner"></div>
+                    <p>Searching document tree and generating answer…</p>
+                    <p class="loading-hint">This may take 15-30 seconds</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ── Toast container ─────────────────────────────────────── -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
