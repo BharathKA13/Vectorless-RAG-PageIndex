@@ -1,87 +1,297 @@
-# Vectorless RAG with PageIndex
+# Vectorless RAG — Structure-Aware Retrieval Without Embeddings
 
-A **vector-database-free** Retrieval-Augmented Generation (RAG) system powered by [PageIndex](https://pageindex.ai) and OpenAI. Instead of chunking documents into embeddings, this approach uses PageIndex's document tree structure for intelligent, structure-aware retrieval.
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white" />
+  <img src="https://img.shields.io/badge/FastAPI-0.100%2B-009688?logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/OpenAI-GPT--4.1-412991?logo=openai&logoColor=white" />
+  <img src="https://img.shields.io/badge/PageIndex-Powered-4f46e5" />
+  <img src="https://img.shields.io/badge/License-MIT-green" />
+</p>
 
-## How It Works
+> **What if you could build a production RAG pipeline with zero vector infrastructure?**
+>
+> No Pinecone. No ChromaDB. No Weaviate. No embedding models. No chunking strategies to tune.
+>
+> This project replaces similarity search with **LLM-driven tree navigation** — the model reasons over a document's hierarchical structure to find exactly the right sections, then generates grounded answers.
 
-1. **Upload** a PDF document to PageIndex
-2. **PageIndex** builds a hierarchical tree of the document (sections, subsections, summaries)
-3. An **LLM navigates the tree** to find relevant nodes for a given query
-4. The text from those nodes is used as **context** for answer generation
+---
 
-No vector database. No embedding model. No chunking strategy to tune.
+## Why This Matters
 
-## Project Structure
+Traditional RAG pipelines require significant infrastructure overhead:
+
+| Traditional RAG | Vectorless RAG (this project) |
+|:---|:---|
+| Chunk documents → embed → store in vector DB | Upload PDF → PageIndex builds a document tree |
+| Tune chunk size, overlap, embedding model | Zero chunking parameters to tune |
+| Deploy & manage a vector database | No database infrastructure needed |
+| Similarity search (often noisy) | LLM reasons over structure (precise) |
+| Lost document structure | Preserves sections, hierarchy, page indices |
+
+**Result:** Faster prototyping, lower infrastructure costs, and retrieval that understands *document structure* — not just token similarity.
+
+---
+
+## Architecture
 
 ```
-├── app/
-│   ├── api/routes/          # FastAPI route handlers
-│   ├── core/config.py       # Settings via pydantic-settings
-│   ├── schemas/             # Request/response models
-│   ├── services/            # Business logic (document + inference)
-│   ├── static/              # Web UI (HTML/CSS/JS)
-│   └── utils/               # Notebook adapter utilities
-├── notebooks/
-│   ├── 01.ipynb             # End-to-end RAG walkthrough
-│   └── 02_vectorless.ipynb  # Vectorless RAG demo
-├── tests/                   # Pytest test suite
-├── requirements.txt
-└── .env.example             # Template for required env vars
+┌─────────────────────────────────────────────────────────┐
+│                      Client (Web UI)                    │
+│              Drag & Drop Upload · Query Interface        │
+└────────────────────────┬────────────────────────────────┘
+                         │ HTTP
+┌────────────────────────▼────────────────────────────────┐
+│                    FastAPI Server                        │
+│  ┌──────────┐  ┌──────────────┐  ┌───────────────────┐  │
+│  │  Routes   │→│   Schemas    │→│     Services       │  │
+│  │ /upload   │  │  Pydantic v2 │  │ DocumentService   │  │
+│  │ /status   │  │  Validation  │  │ InferenceService  │  │
+│  │ /tree     │  └──────────────┘  └──────┬────────────┘  │
+│  │ /query    │                           │               │
+│  └──────────┘                            │               │
+└──────────────────────────────────────────┼───────────────┘
+                                           │
+               ┌───────────────────────────┼──────────────┐
+               │                           │              │
+       ┌───────▼───────┐          ┌────────▼────────┐     │
+       │   PageIndex    │          │     OpenAI      │     │
+       │   • Parse PDF  │          │  • Tree Search  │     │
+       │   • Build Tree │          │  • Answer Gen   │     │
+       │   • Summaries  │          │  (async calls)  │     │
+       └───────────────┘          └─────────────────┘     │
+               └──────────────────────────────────────────┘
 ```
+
+### The Two-Stage Retrieval Pipeline
+
+```
+         ┌──────────────┐
+         │  User Query   │
+         └──────┬───────┘
+                │
+    ┌───────────▼────────────┐
+    │  STAGE 1: Tree Search  │  LLM receives document tree (titles + summaries)
+    │  "Which sections are   │  and reasons about which nodes contain the answer.
+    │   relevant to this     │  Returns: thinking process + node_id list
+    │   question?"           │
+    └───────────┬────────────┘
+                │
+    ┌───────────▼────────────┐
+    │  STAGE 2: Answer Gen   │  Full text from selected nodes is assembled
+    │  "Answer based on      │  as context. LLM generates a grounded answer.
+    │   this context."       │
+    └───────────┬────────────┘
+                │
+    ┌───────────▼────────────┐
+    │     Structured Response │
+    │  • Reasoning trace      │
+    │  • Retrieved nodes      │
+    │  • Context preview      │
+    │  • Final answer         │
+    └─────────────────────────┘
+```
+
+---
+
+## Key Features
+
+- **Zero-Vector Retrieval** — Tree-based document navigation replaces embedding + similarity search
+- **Full-Stack Application** — FastAPI backend + responsive SPA frontend, no build step required
+- **Async Pipeline** — Non-blocking OpenAI calls with `AsyncOpenAI` for production throughput
+- **Interactive Notebooks** — Step-by-step RAG walkthroughs for experimentation and learning
+- **Transparent Reasoning** — Every query returns the LLM's thinking process alongside the answer
+- **Production Patterns** — Pydantic v2 schemas, `pydantic-settings` config, structured error handling, health checks
+- **Test Suite** — Pytest tests with mocked external dependencies for fast, offline CI
+
+---
 
 ## Quick Start
 
-### 1. Clone & install
+### Prerequisites
+
+- Python 3.10+
+- [PageIndex API key](https://dash.pageindex.ai/api-keys)
+- [OpenAI API key](https://platform.openai.com/api-keys)
+
+### 1. Clone & Install
 
 ```bash
 git clone https://github.com/BharathKA13/Vectorless-RAG-PageIndex.git
 cd Vectorless-RAG-PageIndex
+
 python -m venv .venv
 # Windows
 .venv\Scripts\activate
-# macOS/Linux
+# macOS / Linux
 source .venv/bin/activate
 
 pip install -r requirements.txt
 ```
 
-### 2. Configure environment
+### 2. Configure
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` and add your real API keys:
-- **`PAGEINDEX_API_KEY`** — get one at [dash.pageindex.ai/api-keys](https://dash.pageindex.ai/api-keys)
-- **`OPENAI_API_KEY`** — get one at [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+Open `.env` and add your API keys:
 
-### 3. Run the API server
+```env
+PAGEINDEX_API_KEY="your-pageindex-api-key"
+OPENAI_API_KEY="your-openai-api-key"
+```
+
+### 3. Run
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Open [http://127.0.0.1:8000](http://127.0.0.1:8000) for the web UI, or [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) for the Swagger docs.
+| URL | What |
+|-----|------|
+| [localhost:8000](http://localhost:8000) | Web UI |
+| [localhost:8000/docs](http://localhost:8000/docs) | Swagger API docs |
+| [localhost:8000/health](http://localhost:8000/health) | Health check |
 
-### 4. Try the notebooks
+---
+
+## API Reference
+
+### Documents
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/documents/upload` | Upload a PDF document for processing |
+| `GET` | `/api/v1/documents/` | List all submitted documents |
+| `GET` | `/api/v1/documents/{doc_id}/status` | Check processing readiness |
+| `GET` | `/api/v1/documents/{doc_id}/tree` | Retrieve hierarchical document tree |
+
+### Inference
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/v1/inference/query` | Run vectorless RAG query against a document |
+
+<details>
+<summary><b>Example: Query a Document</b></summary>
+
+```bash
+# Upload
+curl -X POST http://localhost:8000/api/v1/documents/upload \
+  -F "file=@paper.pdf"
+# → {"doc_id": "abc123", "filename": "paper.pdf"}
+
+# Query
+curl -X POST http://localhost:8000/api/v1/inference/query \
+  -H "Content-Type: application/json" \
+  -d '{"doc_id": "abc123", "query": "What are the main contributions of this paper?"}'
+```
+
+**Response:**
+```json
+{
+  "doc_id": "abc123",
+  "query": "What are the main contributions of this paper?",
+  "reasoning": "The question asks about contributions, which is typically found in...",
+  "node_list": [
+    {"node_id": "1.1", "title": "Introduction", "page_index": 1},
+    {"node_id": "1.2", "title": "Contributions", "page_index": 2}
+  ],
+  "context_preview": "In this paper, we present three key contributions...",
+  "answer": "The paper presents three main contributions: ..."
+}
+```
+
+</details>
+
+---
+
+## Notebooks
+
+| Notebook | Description |
+|----------|-------------|
+| [`01.ipynb`](notebooks/01.ipynb) | Full pipeline walkthrough — downloads a research paper from arXiv, builds the document tree, runs tree search retrieval, and generates answers |
+| [`02_vectorless.ipynb`](notebooks/02_vectorless.ipynb) | Local PDF demo — the reference implementation that was productionized into the FastAPI service layer |
 
 ```bash
 jupyter notebook notebooks/
 ```
 
-## API Endpoints
+---
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/api/documents/upload` | Upload a PDF document |
-| `GET` | `/api/documents/{doc_id}/status` | Check processing status |
-| `GET` | `/api/documents/{doc_id}/tree` | Get document tree structure |
-| `POST` | `/api/inference/query` | Ask a question about a document |
+## Project Structure
+
+```
+├── app/
+│   ├── api/
+│   │   ├── router.py              # Versioned API router (/api/v1)
+│   │   └── routes/
+│   │       ├── documents.py       # Upload, status, tree endpoints
+│   │       └── inference.py       # RAG query endpoint
+│   ├── core/
+│   │   └── config.py              # pydantic-settings configuration
+│   ├── schemas/
+│   │   ├── document.py            # Request/response models for documents
+│   │   └── inference.py           # Request/response models for inference
+│   ├── services/
+│   │   ├── document_service.py    # PageIndex SDK integration
+│   │   └── inference_service.py   # Two-stage RAG pipeline
+│   ├── static/                    # SPA frontend (HTML/CSS/JS)
+│   ├── utils/
+│   │   └── notebook_adapter.py    # Notebook ↔ service utilities
+│   └── main.py                    # FastAPI app entrypoint
+├── notebooks/                     # Interactive Jupyter demos
+├── tests/                         # Pytest suite with mocked dependencies
+├── requirements.txt
+├── .env.example                   # Environment variable template
+└── README.md
+```
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **API Framework** | FastAPI with async/await |
+| **Validation** | Pydantic v2 + pydantic-settings |
+| **Document Intelligence** | PageIndex SDK (tree parsing, summaries) |
+| **LLM** | OpenAI GPT-4.1 (configurable) |
+| **Frontend** | Vanilla JS SPA — zero build dependencies |
+| **Testing** | pytest + httpx TestClient |
+
+---
+
+## Running Tests
+
+```bash
+pytest tests/ -v
+```
+
+All external services (PageIndex, OpenAI) are mocked — tests run fast and offline.
+
+---
+
+## Configuration
+
+All settings are managed via environment variables (see [`.env.example`](.env.example)):
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PAGEINDEX_API_KEY` | Yes | — | PageIndex API key |
+| `OPENAI_API_KEY` | Yes | — | OpenAI API key |
+| `OPENAI_MODEL` | No | `gpt-4.1` | Chat model to use |
+| `OPENAI_TEMPERATURE` | No | `0.0` | LLM temperature (0.0–2.0) |
+| `UPLOAD_DIR` | No | `data` | Directory for uploaded PDFs |
+| `POLL_INTERVAL` | No | `5` | Seconds between readiness polls |
+| `MAX_WAIT_SECONDS` | No | `300` | Max wait for document processing |
+
+---
 
 ## Contributing
 
-Contributions are welcome! Please open an issue or submit a pull request.
+Contributions are welcome. Please open an issue to discuss proposed changes before submitting a PR.
 
 ## License
 
-MIT
+[MIT](LICENSE)
