@@ -66,7 +66,7 @@ Traditional RAG pipelines require significant infrastructure overhead:
 
 ```
          ┌──────────────┐
-         │  User Query   │
+         │  User Query  │
          └──────┬───────┘
                 │
     ┌───────────▼────────────┐
