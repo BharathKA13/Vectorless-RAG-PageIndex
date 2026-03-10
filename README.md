@@ -107,54 +107,6 @@ Traditional RAG pipelines require significant infrastructure overhead:
 
 ## Quick Start
 
-### Prerequisites
-
-- Python 3.10+
-- [PageIndex API key](https://dash.pageindex.ai/api-keys)
-- [OpenAI API key](https://platform.openai.com/api-keys)
-
-### 1. Clone & Install
-
-```bash
-git clone https://github.com/BharathKA13/Vectorless-RAG-PageIndex.git
-cd Vectorless-RAG-PageIndex
-
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# macOS / Linux
-source .venv/bin/activate
-
-pip install -r requirements.txt
-```
-
-### 2. Configure
-
-```bash
-cp .env.example .env
-```
-
-Open `.env` and add your API keys:
-
-```env
-PAGEINDEX_API_KEY="your-pageindex-api-key"
-OPENAI_API_KEY="your-openai-api-key"
-```
-
-### 3. Run
-
-```bash
-uvicorn app.main:app --reload
-```
-
-| URL | What |
-|-----|------|
-| [localhost:8000](http://localhost:8000) | Web UI |
-| [localhost:8000/docs](http://localhost:8000/docs) | Swagger API docs |
-| [localhost:8000/health](http://localhost:8000/health) | Health check |
-
----
-
 ## API Reference
 
 ### Documents
